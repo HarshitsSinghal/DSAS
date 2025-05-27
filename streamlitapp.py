@@ -6,7 +6,7 @@ from io import BytesIO
 from PIL import Image
 import os
 
-# --- Disk Scheduling Algorithms (unchanged) ---
+# --- Disk Scheduling Algorithms ---
 def fcfs(requests, head):
     seek_sequence = [head] + requests
     total_seek = sum(abs(seek_sequence[i] - seek_sequence[i + 1]) for i in range(len(seek_sequence) - 1))
@@ -51,6 +51,17 @@ def clook(requests, head):
     seek_sequence = [head] + right + left
     total_seek = sum(abs(seek_sequence[i] - seek_sequence[i + 1]) for i in range(len(seek_sequence) - 1))
     return seek_sequence, total_seek
+
+# --- Explanation Generator ---
+def get_seek_explanation(path):
+    explanation = []
+    total = 0
+    for i in range(len(path) - 1):
+        diff = abs(path[i + 1] - path[i])
+        total += diff
+        explanation.append(f"|{path[i+1]} - {path[i]}| = {diff}")
+    explanation_text = "\n".join(explanation)
+    return f"Steps:\n{explanation_text}\n\nTotal Seek Time = {total}"
 
 # --- Streamlit UI ---
 st.set_page_config(page_title="Disk Visualizer", layout="wide")
@@ -102,6 +113,7 @@ def plot_and_save(path, algo):
     ani.save(gif_path, writer=PillowWriter(fps=2))
     return gif_path
 
+# --- Simulation Section ---
 if simulate:
     queue = list(map(int, queue_input.split(",")))
     path, total_seek = get_result(algo, queue, head)
@@ -110,8 +122,12 @@ if simulate:
         st.subheader(f"📊 {algo} Disk Scheduling Result")
         st.image(f.read(), caption="Disk Scheduling Animation")
     os.remove(gif)
-    st.success(f"🎯 Total Seek Time: {total_seek}")
 
+    st.markdown(f"### ✅ Total Seek Time: `{total_seek}`")
+    with st.expander("🔍 Click to see how Seek Time was calculated"):
+        st.text(get_seek_explanation(path))
+
+# --- Comparison Section ---
 if compare:
     queue = list(map(int, queue_input.split(",")))
     col1, col2 = st.columns(2)
@@ -126,13 +142,17 @@ if compare:
         st.subheader(f"🔹 {algo1}")
         with open(gif1, "rb") as f1:
             st.image(f1.read(), caption=f"{algo1} Animation")
-        st.success(f"Seek Time: {seek1}")
+        st.markdown(f"**✅ Seek Time: `{seek1}`**")
+        with st.expander("🔍 See Calculation"):
+            st.text(get_seek_explanation(path1))
 
     with col2:
         st.subheader(f"🔸 {algo2}")
         with open(gif2, "rb") as f2:
             st.image(f2.read(), caption=f"{algo2} Animation")
-        st.success(f"Seek Time: {seek2}")
+        st.markdown(f"**✅ Seek Time: `{seek2}`**")
+        with st.expander("🔍 See Calculation"):
+            st.text(get_seek_explanation(path2))
 
     os.remove(gif1)
     os.remove(gif2)
